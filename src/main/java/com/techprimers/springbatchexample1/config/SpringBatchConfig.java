@@ -1,6 +1,5 @@
 package com.techprimers.springbatchexample1.config;
 
-import com.techprimers.springbatchexample1.model.User;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -20,60 +19,54 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
+import com.techprimers.springbatchexample1.model.User;
+
 @Configuration
 @EnableBatchProcessing
 public class SpringBatchConfig {
 
     @Bean
-    public Job job(JobBuilderFactory jobBuilderFactory,
-                   StepBuilderFactory stepBuilderFactory,
-                   ItemReader<User> itemReader,
-                   ItemProcessor<User, User> itemProcessor,
-                   ItemWriter<User> itemWriter
-    ) {
+    public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory,
+	    ItemReader<User> itemReader, ItemProcessor<User, User> itemProcessor, ItemWriter<User> itemWriter) {
 
-        Step step = stepBuilderFactory.get("ETL-file-load")
-                .<User, User>chunk(100)
-                .reader(itemReader)
-                .processor(itemProcessor)
-                .writer(itemWriter)
-                .build();
+	Step step1 = stepBuilderFactory.get("ETL-file-load-Step-1").<User, User>chunk(10).reader(itemReader)
+		.processor(itemProcessor).writer(itemWriter).build();
 
+	Step step2 = stepBuilderFactory.get("ETL-file-load-Step-2").<User, User>chunk(10000).reader(itemReader)
+		.processor(itemProcessor).writer(itemWriter).build();
 
-        return jobBuilderFactory.get("ETL-Load")
-                .incrementer(new RunIdIncrementer())
-                .start(step)
-                .build();
+	return jobBuilderFactory.get("ETL-Load-Job").incrementer(new RunIdIncrementer()).flow(step1).next(step2).build()
+		.build();
     }
 
     @Bean
     public FlatFileItemReader<User> itemReader(@Value("${input}") Resource resource) {
-
-        FlatFileItemReader<User> flatFileItemReader = new FlatFileItemReader<>();
-        flatFileItemReader.setResource(resource);
-        flatFileItemReader.setName("CSV-Reader");
-        flatFileItemReader.setLinesToSkip(1);
-        flatFileItemReader.setLineMapper(lineMapper());
-        return flatFileItemReader;
+	System.out.println("itemReader called");
+	FlatFileItemReader<User> flatFileItemReader = new FlatFileItemReader<>();
+	flatFileItemReader.setResource(resource);
+	flatFileItemReader.setName("CSV-Reader");
+	flatFileItemReader.setLinesToSkip(1);
+	flatFileItemReader.setLineMapper(lineMapper());
+	return flatFileItemReader;
     }
 
     @Bean
     public LineMapper<User> lineMapper() {
 
-        DefaultLineMapper<User> defaultLineMapper = new DefaultLineMapper<>();
-        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
+	DefaultLineMapper<User> defaultLineMapper = new DefaultLineMapper<>();
+	DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
 
-        lineTokenizer.setDelimiter(",");
-        lineTokenizer.setStrict(false);
-        lineTokenizer.setNames(new String[]{"id", "name", "dept", "salary"});
+	lineTokenizer.setDelimiter(",");
+	lineTokenizer.setStrict(false);
+	lineTokenizer.setNames(new String[] { "id", "name", "dept", "salary" });
 
-        BeanWrapperFieldSetMapper<User> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(User.class);
+	BeanWrapperFieldSetMapper<User> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
+	fieldSetMapper.setTargetType(User.class);
 
-        defaultLineMapper.setLineTokenizer(lineTokenizer);
-        defaultLineMapper.setFieldSetMapper(fieldSetMapper);
+	defaultLineMapper.setLineTokenizer(lineTokenizer);
+	defaultLineMapper.setFieldSetMapper(fieldSetMapper);
 
-        return defaultLineMapper;
+	return defaultLineMapper;
     }
 
 }
