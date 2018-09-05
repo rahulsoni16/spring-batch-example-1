@@ -10,7 +10,7 @@ import com.techprimers.springbatchexample1.model.User;
 import com.techprimers.springbatchexample1.repository.UserRepository;
 
 @Component
-public class DBWriter implements ItemWriter<User> {
+public class DBUserWriter implements ItemWriter<User> {
 
     @Autowired
     private UserRepository userRepository;
